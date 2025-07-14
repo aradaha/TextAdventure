@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 )
@@ -17,17 +16,10 @@ type Room struct {
 	Visited          bool
 	LongDescription  string
 	ShortDescription string
-	North            string
-	South            string
-	East             string
-	West             string
-	NorthLocation    string
-	SouthLocation    string
-	EastLocation     string
-	WestLocation     string
+	Directions       map[string]string
 }
 
-var courtyard = Room{RoomName: "courtyard",
+var courtyard = &Room{RoomName: "courtyard",
 	LongDescription: `
 	A once-graceful courtyard, 
 	now overtaken by wild growth and gentle decay. 
@@ -41,16 +33,10 @@ var courtyard = Room{RoomName: "courtyard",
 	The statue that once adorned it, a weathered saint or perhaps a noble figure, 
 	has lost its head to time, its features worn smooth by centuries.`,
 	ShortDescription: "You are in the Courtyard again",
-	North:            "You see nothing to the North",
-	East:             "You see a chapel to the East",
-	West:             "you see a Vault to the West",
-	South:            "You see a Lab to the South",
-	NorthLocation:    "courtyard",
-	SouthLocation:    "courtyard",
-	EastLocation:     "chapel",
-	WestLocation:     "courtyard"}
 
-var chapel = Room{RoomName: "chapel",
+	Directions: map[string]string{"north": "lab", "east": "chapel"}}
+
+var chapel = &Room{RoomName: "chapel",
 	LongDescription: `
 	A ruined medieval chapel stands in solemn silence, 
 	its crumbling stone walls half-consumed by ivy and time. 
@@ -62,33 +48,22 @@ var chapel = Room{RoomName: "chapel",
 	while fragments of sacred carvings: angels, saints, 
 	and worn Latin inscriptions, peek out from the rubble.`,
 	ShortDescription: "You are in the Chapel again",
-	North:            "You see nothing to the North",
-	East:             "You see nothing to the East",
-	West:             "you see the courtyard to the West",
-	South:            "You see nothing to the South",
-	NorthLocation:    "chapel",
-	SouthLocation:    "chapel",
-	EastLocation:     "chapel",
-	WestLocation:     "courtyard"}
+	Directions:       map[string]string{"west": "courtyard"},
+}
 
-var names = []string{"courtyard", "chapel"}
+/*
+we want to support an arbitrary number of rooms.
+with an arbitrary number of idetifiers to get to those rooms: direction or noun.
+*/
 
-var rooms = []Room{courtyard, chapel}
-
-var roomMap = make(map[string]Room)
+var roomMap = map[string]*Room{
+	"courtyard": courtyard,
+	"chapel":    chapel,
+}
 
 func main() {
 
-	for i, names := range names {
-
-		if i < len(rooms) {
-			roomMap[names] = rooms[i]
-		} else {
-			// error if the lengths don't match
-			fmt.Printf("Harry")
-			os.Exit(0)
-		}
-	}
+	//counts: a=1,b=2,c=5
 
 	location = roomMap["courtyard"].RoomName
 	for !finishedGame {
@@ -101,13 +76,14 @@ func main() {
 		input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		input = strings.ToLower(input)
 
-		if strings.Contains(input, "look") {
-			strings.ReplaceAll(input, " ", "")
-			strings.ReplaceAll(input, "look", "")
-			LookDirection(input)
-		} else if strings.Contains(input, "go") {
-			strings.ReplaceAll(input, " ", "")
-			strings.ReplaceAll(input, "go", "")
+		// if strings.Contains(input, "look") {
+		// 	input = strings.ReplaceAll(input, " ", "")
+		// 	input = strings.ReplaceAll(input, "look", "")
+		// 	LookDirection(input)
+		// } else
+		if strings.Contains(input, "go") {
+			input = strings.ReplaceAll(input, " ", "")
+			input = strings.ReplaceAll(input, "go", "")
 			GoDirection(input)
 		} else {
 			fmt.Print("Please input 'Look' or 'Go' and a direction")
@@ -118,102 +94,74 @@ func main() {
 }
 
 func LocationDescription() {
-	for _, v := range rooms {
-		if v.RoomName == location {
-			if v.Visited == false {
 
-				// roomMap[v.RoomName].Visited = true
+	room := roomMap[location]
 
-				// They made it annoying to try to change the value here
-
-				fmt.Print(v.LongDescription)
-
-				fmt.Println()
-			} else {
-				fmt.Print(v.ShortDescription)
-				fmt.Println()
-			}
-		}
+	if !room.Visited {
+		room.Visited = true
+		fmt.Println(room.LongDescription)
+	} else {
+		fmt.Println(room.ShortDescription)
 	}
+
 }
 
 func GoDirection(newinput string) {
 
-	newlocation := location
+	oldlocation := location
 
-	if strings.Contains(newinput, "north") {
-		location = roomMap[location].NorthLocation
-		if location == newlocation {
-			fmt.Print("There's nothing that way!")
+	for k, v := range roomMap[location].Directions {
+		if strings.Contains(newinput, k) {
+			location = v
+			NewLocation(newinput, oldlocation)
 		} else {
-			fmt.Print("You went North to the ")
-			fmt.Print(location)
-			fmt.Println()
+			fmt.Println("You don't know where that is!")
 		}
-	} else if strings.Contains(newinput, "south") {
-		location = roomMap[location].SouthLocation
-		if location == newlocation {
-			fmt.Print("There's nothing that way!")
-		} else {
-			fmt.Print("You went South to the ")
-			fmt.Print(location)
-			fmt.Println()
-		}
-	} else if strings.Contains(newinput, "east") {
-		location = roomMap[location].EastLocation
-		if location == newlocation {
-			fmt.Print("There's nothing that way!")
-		} else {
-			fmt.Print("You went East to the ")
-			fmt.Print(location)
-			fmt.Println()
-		}
-	} else if strings.Contains(newinput, "west") {
-		location = roomMap[location].WestLocation
-		if location == newlocation {
-			fmt.Print("There's nothing that way!")
-		} else {
-			fmt.Print("You went West to the ")
-			fmt.Print(location)
-			fmt.Println()
-		}
-	} else {
-		fmt.Println("You don't know where that is!")
 	}
 
 }
 
-func LookDirection(newinput string) {
+// func LookDirection(newinput string) {
 
-	if strings.Contains(newinput, "north") {
-		fmt.Println(roomMap[location].North)
-	} else if strings.Contains(newinput, "south") {
-		fmt.Println(roomMap[location].South)
-	} else if strings.Contains(newinput, "east") {
-		fmt.Println(roomMap[location].East)
-	} else if strings.Contains(newinput, "west") {
-		fmt.Println(roomMap[location].West)
+// 	if strings.Contains(newinput, "north") {
+// 		fmt.Println(roomMap[location].North)
+// 	} else if strings.Contains(newinput, "south") {
+// 		fmt.Println(roomMap[location].South)
+// 	} else if strings.Contains(newinput, "east") {
+// 		fmt.Println(roomMap[location].East)
+// 	} else if strings.Contains(newinput, "west") {
+// 		fmt.Println(roomMap[location].West)
+// 	} else {
+// 		if rand.Intn(100) != 99 {
+// 			fmt.Println("You aren't sure which direction that is")
+// 		} else {
+// 			fmt.Println(`
+// 	The world ignites in silence, bright and wide,
+// 	a second sun that tears the morning thin.
+// 	I cannot scream; the breath has left my side,
+// 	and all I was dissolves before the din.
+
+// 	The trees bow down, then vanish into light,
+// 	the city folds like paper in a flame.
+// 	No hero's end, no final, noble fight—
+// 	just dust, and sky, and none to speak my name.
+
+// 	You have died from an atomic bomb.
+
+// 	The end`)
+// 			os.Exit(0)
+
+// 		}
+// 	}
+
+// }
+
+func NewLocation(input string, newlocation string) {
+	if location == newlocation {
+		fmt.Print("There's nothing that way!")
 	} else {
-		if rand.Intn(100) != 99 {
-			fmt.Println("You aren't sure which direction that is")
-		} else {
-			fmt.Println(`
-	The world ignites in silence, bright and wide,
-	a second sun that tears the morning thin.
-	I cannot scream; the breath has left my side,
-	and all I was dissolves before the din.
-
-	The trees bow down, then vanish into light,
-	the city folds like paper in a flame.
-	No hero's end, no final, noble fight—
-	just dust, and sky, and none to speak my name.
-
-	You have died from an atomic bomb.
-
-	The end`)
-			os.Exit(0)
-
-		}
+		fmt.Printf("You went %s to the ", input)
+		fmt.Print(location)
+		fmt.Println()
 	}
-
 }
